@@ -474,3 +474,27 @@ def should_continue(state):
 ## Related Skills
 
 Works well with: `brand-guidelines`, `autonomous-agents`, `langfuse`, `structured-output`
+
+---
+
+## 详细参考指南
+
+> **遇到具体问题时，请根据下表找到对应的参考文件获取详细代码示例和完整说明。**
+
+| 遇到的场景 | 查阅的参考文件 |
+|-----------|-------------|
+| 项目开始前，需要在 LangChain / LangGraph / Deep Agents 三者之间做选择 | `references/framework-selection.md` |
+| 安装包、版本冲突、依赖管理（Python 或 TypeScript） | `references/langchain-dependencies.md` |
+| 使用 `create_agent()`、定义 `@tool`、添加 Checkpointer | `references/langchain-fundamentals.md` |
+| 需要 Human-in-the-loop 的 `HumanInTheLoopMiddleware`、结构化输出 | `references/langchain-middleware.md` |
+| 构建 RAG 管道、向量存储、文档加载器、文本分割 | `references/langchain-rag.md` |
+| 构建 `StateGraph`、设计节点/边、`Command`、`Send` 并行、流式输出 | `references/langgraph-fundamentals.md` |
+| 实现 `interrupt()`、`Command(resume=...)`、审批工作流、验证循环 | `references/langgraph-human-in-the-loop.md` |
+| Checkpointer、`thread_id`、状态历史、时间旅行、跨线程 Store 记忆 | `references/langgraph-persistence.md` |
+| 使用 Deep Agents (`create_deep_agent()`)、Harness 架构、SKILL.md 格式 | `references/deep-agents-core.md` |
+| Deep Agent 的记忆、文件系统后端（StateBackend / StoreBackend / CompositeBackend） | `references/deep-agents-memory.md` |
+| 子 Agent 委托、TodoList 任务规划、Deep Agent 的 HITL 审批工作流 | `references/deep-agents-orchestration.md` |
+
+同时，两个已有的参考文件：
+- **`references/architecture_patterns.md`** — RAG、多 Agent 监督者、HITL 完整架构示例
+- **`references/advanced_features.md`** — LangSmith、流式输出、Anthropic Extended Thinking、Prompt Caching、MCP
