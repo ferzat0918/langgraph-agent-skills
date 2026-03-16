@@ -1,8 +1,8 @@
 <div align="center">
 
-# 🤖 LangChain Agent Builder Skills
+# 🤖 LangGraph Agent Builder Skills
 
-**A production-grade skill library for building AI agents with LangGraph**
+**A production-grade skill library for building AI agents with LangGraph, LangChain & Claude**
 
 [![LangGraph](https://img.shields.io/badge/LangGraph-0.3.x-blue?style=flat-square&logo=python)](https://github.com/langchain-ai/langgraph)
 [![LangChain](https://img.shields.io/badge/LangChain-0.3.x-green?style=flat-square&logo=python)](https://github.com/langchain-ai/langchain)
@@ -12,6 +12,8 @@
 [![Stars](https://img.shields.io/github/stars/ferzat0918/langchain-agent-builer-skills?style=flat-square)](https://github.com/ferzat0918/langchain-agent-builer-skills)
 
 *Stop searching documentation every time you build. This is everything you need, exactly when you need it.*
+
+<!-- keywords: langgraph agent, langchain agent builder, ai agent skills, llm agent python, langgraph tutorial, langchain skills, multi-agent system, human-in-the-loop, rag implementation, prompt engineering, mcp server, cost optimization llm, langgraph examples, ai coding assistant skills, claude anthropic agent -->
 
 </div>
 
@@ -276,7 +278,7 @@ Point your assistant at the `skills/` directory. When you start a task, the assi
 ## 📁 Repository Structure
 
 ```
-langchain-agent-builer-skills/
+langchain-agent-builder-skills/
 │
 ├── README.md
 ├── .gitignore
@@ -319,6 +321,19 @@ langchain-agent-builer-skills/
         ├── scripts/                  #    Evaluation pipeline
         └── eval-viewer/              #    HTML review UI
 ```
+
+---
+
+## 🔗 Related Projects & Resources
+
+> Discovered this repo while searching for one of these? You're in the right place.
+
+- [LangGraph](https://github.com/langchain-ai/langgraph) — The agent orchestration framework these skills are built for
+- [LangChain](https://github.com/langchain-ai/langchain) — The broader ecosystem
+- [Anthropic Claude](https://www.anthropic.com) — The LLM powering most examples here
+- [LangSmith](https://smith.langchain.com) — Observability & evaluation for LangGraph agents
+- [FastMCP](https://github.com/jlowin/fastmcp) — Python MCP server framework used in `mcp-builder`
+- [Instructor](https://github.com/jxnl/instructor) — Structured outputs library used in `instructor` skill
 
 ---
 
