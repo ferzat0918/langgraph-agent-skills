@@ -1,0 +1,58 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+.venv/
+venv/
+env/
+ENV/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Environment / Secrets
+.env
+.env.*
+*.env
+!.env.example
+
+# API Keys (never commit these!)
+secrets.yaml
+secrets.json
+config.local.yaml
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Vector DB / Local data
+chroma_db/
+*.db
+*.sqlite
+*.sqlite3
+
+# Node (if any JS tools are added)
+node_modules/
+npm-debug.log
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# OS
+Desktop.ini
