@@ -1,87 +1,87 @@
 # langgraph-fundamentals
 
-> 编写**任何** LangGraph 代码时参阅此文件。涵盖 StateGraph、状态 Schema、节点、边、Command、Send、invoke、流式输出和错误处理。
+> Consult this file when writing **any** LangGraph code. Covers StateGraph, state schemas, nodes, edges, Command, Send, invoke, streaming, and error handling.
 
-## 目录
-- [核心概念](#核心概念)
-- [设计方法论](#设计方法论)
-- [何时使用 LangGraph](#何时使用-langgraph)
-- [状态管理](#状态管理)
-- [节点](#节点)
-- [边](#边)
-- [Command 模式](#command-模式)
-- [Send API（并行）](#send-api并行)
-- [运行图：invoke 和 stream](#运行图invoke-和-stream)
-- [错误处理](#错误处理)
-- [常见错误与修复](#常见错误与修复)
-
----
-
-## 核心概念
-
-LangGraph 将 Agent 工作流建模为**有向图**：
-
-- **StateGraph**：构建有状态图的主类
-- **节点（Nodes）**：执行工作并更新状态的函数
-- **边（Edges）**：定义执行顺序（静态或条件式）
-- **START/END**：标记入口和出口的特殊节点
-- **带 Reducer 的状态**：控制状态更新的合并方式
-
-图必须先 `compile()` 才能执行。
+## Table of Contents
+- [Core Concepts](#core-concepts)
+- [Design Methodology](#design-methodology)
+- [When to Use LangGraph](#when-to-use-langgraph)
+- [State Management](#state-management)
+- [Nodes](#nodes)
+- [Edges](#edges)
+- [Command Pattern](#command-pattern)
+- [Send API (Parallel)](#send-api-parallel)
+- [Running Graphs: invoke and stream](#running-graphs-invoke-and-stream)
+- [Error Handling](#error-handling)
+- [Common Mistakes and Fixes](#common-mistakes-and-fixes)
 
 ---
 
-## 设计方法论
+## Core Concepts
 
-构建新图时遵循以下 5 步：
+LangGraph models agent workflows as **directed graphs**:
 
-1. **规划离散步骤** — 绘制工作流流程图，每个步骤对应一个节点
-2. **确定每步的职责** — 分类节点：LLM 步骤、数据步骤、动作步骤或用户输入步骤
-3. **设计你的状态** — 状态是所有节点的共享内存，存储原始数据
-4. **构建你的节点** — 将每个步骤实现为接受状态并返回部分更新的函数
-5. **连接在一起** — 用边连接节点，添加条件路由，如需要则用 Checkpointer 编译
+- **StateGraph**: The main class for building stateful graphs
+- **Nodes**: Functions that perform work and update state
+- **Edges**: Define execution order (static or conditional)
+- **START/END**: Special nodes marking entry and exit points
+- **State with Reducers**: Control how state updates are merged
+
+Graphs must be `compile()`d before execution.
 
 ---
 
-## 何时使用 LangGraph
+## Design Methodology
 
-| 使用 LangGraph 时 | 使用替代方案时 |
+Follow these 5 steps when building a new graph:
+
+1. **Plan discrete steps** — draw the workflow flowchart, each step corresponds to a node
+2. **Determine each step's responsibility** — classify nodes: LLM step, data step, action step, or user input step
+3. **Design your state** — state is shared memory for all nodes, stores raw data
+4. **Build your nodes** — implement each step as a function that takes state and returns partial updates
+5. **Wire it together** — connect nodes with edges, add conditional routing, compile with Checkpointer if needed
+
+---
+
+## When to Use LangGraph
+
+| Use LangGraph When | Use Alternatives When |
 |-----------------|-------------|
-| 需要对 Agent 编排进行细粒度控制 | 快速原型 → LangChain Agent |
-| 构建带分支/循环的复杂工作流 | 简单无状态工作流 → LangChain direct |
-| 需要 human-in-the-loop、持久化 | 需要开箱即用功能 → Deep Agents |
+| Need fine-grained control over agent orchestration | Quick prototypes → LangChain Agent |
+| Building complex workflows with branching/loops | Simple stateless workflows → LangChain direct |
+| Need human-in-the-loop, persistence | Need out-of-the-box features → Deep Agents |
 
 ---
 
-## 状态管理
+## State Management
 
-| 需求 | 解决方案 | 示例 |
+| Need | Solution | Example |
 |------|---------|------|
-| 覆盖值 | 无 Reducer（默认） | 简单字段如计数器 |
-| 追加到列表 | Reducer (operator.add / concat) | 消息历史、日志 |
-| 自定义逻辑 | 自定义 Reducer 函数 | 复杂合并 |
+| Overwrite value | No Reducer (default) | Simple fields like counters |
+| Append to list | Reducer (operator.add / concat) | Message history, logs |
+| Custom logic | Custom Reducer function | Complex merging |
 
-### 状态 Schema 与 Reducer
+### State Schema and Reducers
 
-**Python：**
+**Python:**
 ```python
 from typing_extensions import TypedDict, Annotated
 import operator
 
 class State(TypedDict):
-    name: str  # 默认：更新时覆盖
-    messages: Annotated[list, operator.add]  # 追加到列表
-    total: Annotated[int, operator.add]  # 整数求和
+    name: str  # Default: overwrite on update
+    messages: Annotated[list, operator.add]  # Append to list
+    total: Annotated[int, operator.add]  # Sum integers
 ```
 
-**TypeScript：**
+**TypeScript:**
 ```typescript
 import { StateSchema, ReducedValue, MessagesValue } from "@langchain/langgraph";
 import { z } from "zod";
 
 const State = new StateSchema({
-  name: z.string(),  // 默认：覆盖
-  messages: MessagesValue,  // 消息内置
+  name: z.string(),  // Default: overwrite
+  messages: MessagesValue,  // Messages built-in
   items: new ReducedValue(
     z.array(z.string()).default(() => []),
     { reducer: (current, update) => current.concat(update) }
@@ -91,15 +91,15 @@ const State = new StateSchema({
 
 ---
 
-## 节点
+## Nodes
 
-节点函数接受的签名：
+Node function signatures:
 
-| 签名 | 使用时机 |
-|------|---------|
-| `def node(state: State)` | 只需要状态的简单节点 |
-| `def node(state: State, config: RunnableConfig)` | 需要 thread_id、tags 或 configurable 值 |
-| `def node(state: State, runtime: Runtime[Context])` | 需要运行时上下文、store 或 stream_writer |
+| Signature | When to Use |
+|------|---------| 
+| `def node(state: State)` | Simple nodes that only need state |
+| `def node(state: State, config: RunnableConfig)` | Need thread_id, tags, or configurable values |
+| `def node(state: State, runtime: Runtime[Context])` | Need runtime context, store, or stream_writer |
 
 ```python
 from langchain_core.runnables import RunnableConfig
@@ -119,16 +119,16 @@ def node_with_runtime(state: State, runtime: Runtime[Context]):
 
 ---
 
-## 边
+## Edges
 
-| 需求 | 边类型 | 使用时机 |
-|------|--------|---------|
-| 始终去同一节点 | `add_edge()` | 固定、确定性流 |
-| 基于状态路由 | `add_conditional_edges()` | 动态分支 |
-| 更新状态 AND 路由 | `Command` | 在单个节点中合并逻辑 |
-| 扇出到多个节点 | `Send` | 带动态输入的并行处理 |
+| Need | Edge Type | When to Use |
+|------|--------|---------| 
+| Always go to same node | `add_edge()` | Fixed, deterministic flow |
+| Route based on state | `add_conditional_edges()` | Dynamic branching |
+| Update state AND route | `Command` | Combine logic in a single node |
+| Fan out to multiple nodes | `Send` | Parallel processing with dynamic inputs |
 
-### 基础图（线性执行）
+### Basic Graph (Linear Execution)
 
 ```python
 from langgraph.graph import StateGraph, START, END
@@ -158,7 +158,7 @@ result = graph.invoke({"input": "hello"})
 print(result["output"])  # "PROCESSED: HELLO"
 ```
 
-### 条件边（动态路由）
+### Conditional Edges (Dynamic Routing)
 
 ```python
 from typing import Literal
@@ -191,12 +191,12 @@ graph = (
 
 ---
 
-## Command 模式
+## Command Pattern
 
-Command 在单个返回值中结合状态更新和路由：
-- **`update`**：要应用的状态更新（类似于从节点返回 dict）
-- **`goto`**：下一步要导航到的节点名称
-- **`resume`**：`interrupt()` 后恢复的值 — 见 `langgraph-human-in-the-loop.md`
+Command combines state updates and routing in a single return value:
+- **`update`**: State updates to apply (similar to returning a dict from a node)
+- **`goto`**: Node name to navigate to next
+- **`resume`**: Value to resume after `interrupt()` — see `langgraph-human-in-the-loop.md`
 
 ```python
 from langgraph.types import Command
@@ -207,20 +207,20 @@ class State(TypedDict):
     result: str
 
 def node_a(state: State) -> Command[Literal["node_b", "node_c"]]:
-    """在一次返回中更新状态 AND 决定下一个节点。"""
+    """Update state AND decide next node in a single return."""
     new_count = state["count"] + 1
     if new_count > 5:
         return Command(update={"count": new_count}, goto="node_c")
     return Command(update={"count": new_count}, goto="node_b")
 ```
 
-> ⚠️ **警告**：`Command` 只添加**动态**边 — 用 `add_edge` 定义的静态边仍然会执行。如果 `node_a` 返回 `Command(goto="node_c")` 且你也有 `graph.add_edge("node_a", "node_b")`，则 `node_b` 和 `node_c` **都会运行**。
+> ⚠️ **Warning**: `Command` only adds **dynamic** edges — static edges defined with `add_edge` will still execute. If `node_a` returns `Command(goto="node_c")` and you also have `graph.add_edge("node_a", "node_b")`, then **both** `node_b` and `node_c` will run.
 
 ---
 
-## Send API（并行）
+## Send API (Parallel)
 
-扇出到并行 Worker：从条件边返回 `[Send("worker", {...})]`。结果字段需要 Reducer。
+Fan out to parallel workers: return `[Send("worker", {...})]` from a conditional edge. Result fields need a Reducer.
 
 ```python
 from langgraph.types import Send
@@ -229,11 +229,11 @@ import operator
 
 class OrchestratorState(TypedDict):
     tasks: list[str]
-    results: Annotated[list, operator.add]  # Reducer 必须
+    results: Annotated[list, operator.add]  # Reducer required
     summary: str
 
 def orchestrator(state: OrchestratorState):
-    """扇出任务到 Worker。"""
+    """Fan out tasks to workers."""
     return [Send("worker", {"task": task}) for task in state["tasks"]]
 
 def worker(state: dict) -> dict:
@@ -257,26 +257,26 @@ result = graph.invoke({"tasks": ["Task A", "Task B", "Task C"]})
 
 ---
 
-## 运行图：invoke 和 stream
+## Running Graphs: invoke and stream
 
-### invoke 基础
+### invoke Basics
 
 ```python
 result = graph.invoke({"input": "hello"})
-# 带 config（用于持久化、tags 等）
+# With config (for persistence, tags, etc.)
 result = graph.invoke({"input": "hello"}, {"configurable": {"thread_id": "1"}})
 ```
 
-### stream 模式选择
+### stream Mode Selection
 
-| 模式 | 流式内容 | 使用场景 |
-|------|---------|---------|
-| `values` | 每步后的完整状态 | 监控完整状态 |
-| `updates` | 状态增量 | 跟踪增量更新 |
-| `messages` | LLM tokens + 元数据 | 聊天 UI |
-| `custom` | 用户定义的数据 | 进度指示器 |
+| Mode | Streamed Content | Use Case |
+|------|---------|---------| 
+| `values` | Full state after each step | Monitor full state |
+| `updates` | State deltas | Track incremental updates |
+| `messages` | LLM tokens + metadata | Chat UI |
+| `custom` | User-defined data | Progress indicators |
 
-### 流式 LLM Tokens
+### Streaming LLM Tokens
 
 ```python
 for chunk in graph.stream(
@@ -288,7 +288,7 @@ for chunk in graph.stream(
         print(token.content, end="", flush=True)
 ```
 
-### 自定义流式数据
+### Custom Streaming Data
 
 ```python
 from langgraph.config import get_stream_writer
@@ -296,7 +296,7 @@ from langgraph.config import get_stream_writer
 def my_node(state):
     writer = get_stream_writer()
     writer("Processing step 1...")
-    # 做工作
+    # do work
     writer("Complete!")
     return {"result": "done"}
 
@@ -306,26 +306,26 @@ for chunk in graph.stream({"data": "test"}, stream_mode="custom"):
 
 ---
 
-## 错误处理
+## Error Handling
 
-| 错误类型 | 谁来修复 | 策略 | 示例 |
+| Error Type | Who Fixes | Strategy | Example |
 |---------|---------|------|------|
-| 瞬时性（网络、限速） | 系统 | `RetryPolicy(max_attempts=3)` | `add_node(..., retry_policy=...)` |
-| LLM 可恢复（工具失败） | LLM | `ToolNode(tools, handle_tool_errors=True)` | 错误作为 ToolMessage 返回 |
-| 用户可修复（缺少信息） | 人工 | `interrupt({...})` | 收集缺失数据（见 HITL 参考） |
-| 意外错误 | 开发者 | 让它冒泡 | `raise` |
+| Transient (network, rate limits) | System | `RetryPolicy(max_attempts=3)` | `add_node(..., retry_policy=...)` |
+| LLM-recoverable (tool failure) | LLM | `ToolNode(tools, handle_tool_errors=True)` | Error returned as ToolMessage |
+| User-fixable (missing info) | Human | `interrupt({...})` | Collect missing data (see HITL reference) |
+| Unexpected errors | Developer | Let it bubble up | `raise` |
 
 ```python
 from langgraph.types import RetryPolicy
 
-# 重试策略
+# Retry policy
 workflow.add_node(
     "search_documentation",
     search_documentation,
     retry_policy=RetryPolicy(max_attempts=3, initial_interval=1.0)
 )
 
-# 工具节点错误处理
+# Tool node error handling
 from langgraph.prebuilt import ToolNode
 tool_node = ToolNode(tools, handle_tool_errors=True)
 workflow.add_node("tools", tool_node)
@@ -333,72 +333,72 @@ workflow.add_node("tools", tool_node)
 
 ---
 
-## 常见错误与修复
+## Common Mistakes and Fixes
 
-### ❌ 忘记调用 compile()
+### ❌ Forgetting to Call compile()
 ```python
-# 错误
-builder.invoke({"input": "test"})  # AttributeError！
+# Wrong
+builder.invoke({"input": "test"})  # AttributeError!
 
-# 正确
+# Correct
 graph = builder.compile()
 graph.invoke({"input": "test"})
 ```
 
-### ❌ 列表字段没有 Reducer
+### ❌ List Field Without Reducer
 ```python
-# 错误：列表将被覆盖
+# Wrong: list will be overwritten
 class State(TypedDict):
-    messages: list  # 没有 Reducer！
-# 节点 1 返回：{"messages": ["A"]}
-# 节点 2 返回：{"messages": ["B"]}
-# 最终：{"messages": ["B"]}  # "A" 已丢失！
+    messages: list  # No Reducer!
+# Node 1 returns: {"messages": ["A"]}
+# Node 2 returns: {"messages": ["B"]}
+# Final: {"messages": ["B"]}  # "A" is lost!
 
-# 正确：使用带 operator.add 的 Annotated
+# Correct: use Annotated with operator.add
 class State(TypedDict):
     messages: Annotated[list, operator.add]
-# 最终：{"messages": ["A", "B"]}
+# Final: {"messages": ["A", "B"]}
 ```
 
-### ❌ 节点返回整个状态而非部分更新
+### ❌ Node Returns Entire State Instead of Partial Update
 ```python
-# 错误：返回整个状态对象
+# Wrong: returning the entire state object
 def my_node(state: State) -> State:
     state["field"] = "updated"
-    return state  # 不要这样！
+    return state  # Don't do this!
 
-# 正确：只返回包含更新的 dict
+# Correct: return only a dict with updates
 def my_node(state: State) -> dict:
     return {"field": "updated"}
 ```
 
-### ❌ 无限循环（缺少出口条件）
+### ❌ Infinite Loop (Missing Exit Condition)
 ```python
-# 错误：永远循环
+# Wrong: loops forever
 builder.add_edge("node_a", "node_b")
 builder.add_edge("node_b", "node_a")
 
-# 正确
+# Correct
 def should_continue(state):
     return END if state["count"] > 10 else "node_b"
 builder.add_conditional_edges("node_a", should_continue)
 ```
 
-### ❌ 其他常见错误
+### ❌ Other Common Mistakes
 ```python
-# 路由器必须返回图中存在的节点名称
-builder.add_node("my_node", func)  # 在边中引用之前先添加节点
+# Router must return node names that exist in the graph
+builder.add_node("my_node", func)  # Add node before referencing in edges
 builder.add_conditional_edges("node_a", router, ["my_node"])
 
-# Command 返回类型需要 Literal 声明路由目标（Python）
+# Command return type needs Literal declaration for routing targets (Python)
 def node_a(state) -> Command[Literal["node_b", "node_c"]]:
     return Command(goto="node_b")
 
-# START 只是入口 - 不能路由回去
-builder.add_edge("node_a", START)  # 错误！
-builder.add_edge("node_a", "entry")  # 使用命名入口节点代替
+# START is just an entry — cannot route back to it
+builder.add_edge("node_a", START)  # Wrong!
+builder.add_edge("node_a", "entry")  # Use a named entry node instead
 
-# Send 并行结果需要 Reducer
+# Send parallel results need a Reducer
 class State(TypedDict):
-    results: Annotated[list, operator.add]  # 列表 Reducer，不是字符串
+    results: Annotated[list, operator.add]  # List Reducer, not string
 ```

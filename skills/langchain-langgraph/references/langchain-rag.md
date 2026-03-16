@@ -1,73 +1,73 @@
 # langchain-rag
 
-> 构建**任何** RAG（检索增强生成）系统时参阅此文件。涵盖文档加载器、RecursiveCharacterTextSplitter、嵌入模型（OpenAI），以及向量存储（Chroma, FAISS, Pinecone）。
+> Consult this file when building **any** RAG (Retrieval Augmented Generation) system. Covers document loaders, RecursiveCharacterTextSplitter, embedding models (OpenAI), and vector stores (Chroma, FAISS, Pinecone).
 
-## 目录
-- [RAG 管道概述](#rag-管道概述)
-- [向量存储选择](#向量存储选择)
-- [完整 RAG 管道示例](#完整-rag-管道示例)
-- [文档加载器](#文档加载器)
-- [文本分割](#文本分割)
-- [向量存储操作](#向量存储操作)
-- [检索策略](#检索策略)
-- [RAG + Agent 集成](#rag--agent-集成)
-- [常见错误与修复](#常见错误与修复)
-
----
-
-## RAG 管道概述
-
-**处理流程：**
-1. **索引**：加载 → 分割 → 嵌入 → 存储
-2. **检索**：查询 → 嵌入 → 搜索 → 返回文档
-3. **生成**：文档 + 查询 → LLM → 响应
-
-**关键组件：**
-- **文档加载器**：从文件、网络、数据库摄取数据
-- **文本分割器**：将文档分割成块
-- **嵌入模型**：将文本转换为向量
-- **向量存储**：存储和搜索嵌入
+## Table of Contents
+- [RAG Pipeline Overview](#rag-pipeline-overview)
+- [Vector Store Selection](#vector-store-selection)
+- [Full RAG Pipeline Example](#full-rag-pipeline-example)
+- [Document Loaders](#document-loaders)
+- [Text Splitting](#text-splitting)
+- [Vector Store Operations](#vector-store-operations)
+- [Retrieval Strategies](#retrieval-strategies)
+- [RAG + Agent Integration](#rag--agent-integration)
+- [Common Mistakes and Fixes](#common-mistakes-and-fixes)
 
 ---
 
-## 向量存储选择
+## RAG Pipeline Overview
 
-| 向量存储 | 使用场景 | 持久性 |
+**Processing flow:**
+1. **Indexing**: Load → Split → Embed → Store
+2. **Retrieval**: Query → Embed → Search → Return documents
+3. **Generation**: Documents + Query → LLM → Response
+
+**Key components:**
+- **Document Loaders**: Ingest data from files, web, databases
+- **Text Splitters**: Split documents into chunks
+- **Embedding Models**: Convert text to vectors
+- **Vector Stores**: Store and search embeddings
+
+---
+
+## Vector Store Selection
+
+| Vector Store | Use Case | Persistence |
 |---------|---------|--------|
-| **InMemory** | 测试 | 仅内存 |
-| **FAISS** | 本地，高性能 | 磁盘 |
-| **Chroma** | 开发 | 磁盘 |
-| **Pinecone** | 生产，托管 | 云端 |
+| **InMemory** | Testing | Memory only |
+| **FAISS** | Local, high performance | Disk |
+| **Chroma** | Development | Disk |
+| **Pinecone** | Production, managed | Cloud |
 
 ---
 
-## 完整 RAG 管道示例
+## Full RAG Pipeline Example
 
-**Python：**
+**Python:**
 ```python
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_community.vectorstores import InMemoryVectorStore
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
 
-# 1. 加载文档
+# 1. Load documents
 docs = [
     Document(page_content="LangChain is a framework for LLM apps.", metadata={}),
     Document(page_content="RAG = Retrieval Augmented Generation.", metadata={}),
 ]
 
-# 2. 分割文档
+# 2. Split documents
 splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
 splits = splitter.split_documents(docs)
 
-# 3. 创建嵌入和存储
+# 3. Create embeddings and store
 embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
 vectorstore = InMemoryVectorStore.from_documents(splits, embeddings)
 
-# 4. 创建检索器
+# 4. Create retriever
 retriever = vectorstore.as_retriever(search_kwargs={"k": 4})
 
-# 5. 在 RAG 中使用
+# 5. Use in RAG
 model = ChatOpenAI(model="gpt-4.1")
 query = "What is RAG?"
 relevant_docs = retriever.invoke(query)
@@ -79,31 +79,31 @@ response = model.invoke([
 ])
 ```
 
-**TypeScript：**
+**TypeScript:**
 ```typescript
 import { ChatOpenAI, OpenAIEmbeddings } from "@langchain/openai";
 import { MemoryVectorStore } from "@langchain/classic/vectorstores/memory";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { Document } from "@langchain/core/documents";
 
-// 1. 加载文档
+// 1. Load documents
 const docs = [
   new Document({ pageContent: "LangChain is a framework for LLM apps.", metadata: {} }),
   new Document({ pageContent: "RAG = Retrieval Augmented Generation.", metadata: {} }),
 ];
 
-// 2. 分割文档
+// 2. Split documents
 const splitter = new RecursiveCharacterTextSplitter({ chunkSize: 500, chunkOverlap: 50 });
 const splits = await splitter.splitDocuments(docs);
 
-// 3. 创建嵌入和存储
+// 3. Create embeddings and store
 const embeddings = new OpenAIEmbeddings({ model: "text-embedding-3-small" });
 const vectorstore = await MemoryVectorStore.fromDocuments(splits, embeddings);
 
-// 4. 创建检索器
+// 4. Create retriever
 const retriever = vectorstore.asRetriever({ k: 4 });
 
-// 5. 在 RAG 中使用
+// 5. Use in RAG
 const model = new ChatOpenAI({ model: "gpt-4.1" });
 const query = "What is RAG?";
 const relevantDocs = await retriever.invoke(query);
@@ -117,9 +117,9 @@ const response = await model.invoke([
 
 ---
 
-## 文档加载器
+## Document Loaders
 
-### 加载 PDF
+### Load PDF
 ```python
 from langchain_community.document_loaders import PyPDFLoader
 
@@ -128,7 +128,7 @@ docs = loader.load()
 print(f"Loaded {len(docs)} pages")
 ```
 
-### 加载网页
+### Load Web Page
 ```python
 from langchain_community.document_loaders import WebBaseLoader
 
@@ -136,13 +136,13 @@ loader = WebBaseLoader("https://docs.langchain.com")
 docs = loader.load()
 ```
 
-### 加载目录
+### Load Directory
 ```python
 from langchain_community.document_loaders import DirectoryLoader, TextLoader
 
 loader = DirectoryLoader(
     "path/to/documents",
-    glob="**/*.txt",  # 文件模式
+    glob="**/*.txt",  # File pattern
     loader_cls=TextLoader
 )
 docs = loader.load()
@@ -150,15 +150,15 @@ docs = loader.load()
 
 ---
 
-## 文本分割
+## Text Splitting
 
 ```python
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 splitter = RecursiveCharacterTextSplitter(
-    chunk_size=1000,        # 每块的字符数
-    chunk_overlap=200,      # 上下文连续性的重叠
-    separators=["\n\n", "\n", " ", ""],  # 分割层级
+    chunk_size=1000,        # Characters per chunk
+    chunk_overlap=200,      # Overlap for context continuity
+    separators=["\n\n", "\n", " ", ""],  # Split hierarchy
 )
 
 splits = splitter.split_documents(docs)
@@ -166,15 +166,15 @@ splits = splitter.split_documents(docs)
 
 ---
 
-## 向量存储操作
+## Vector Store Operations
 
-### Chroma（持久化本地存储）
+### Chroma (Persistent Local Storage)
 
 ```python
 from langchain_chroma import Chroma
 from langchain_openai import OpenAIEmbeddings
 
-# 创建并保存
+# Create and save
 vectorstore = Chroma.from_documents(
     documents=splits,
     embedding=OpenAIEmbeddings(),
@@ -182,7 +182,7 @@ vectorstore = Chroma.from_documents(
     collection_name="my-collection",
 )
 
-# 从磁盘加载
+# Load from disk
 vectorstore = Chroma(
     persist_directory="./chroma_db",
     embedding_function=OpenAIEmbeddings(),
@@ -190,7 +190,7 @@ vectorstore = Chroma(
 )
 ```
 
-### FAISS（高性能本地存储）
+### FAISS (High-Performance Local Storage)
 
 ```python
 from langchain_community.vectorstores import FAISS
@@ -198,7 +198,7 @@ from langchain_community.vectorstores import FAISS
 vectorstore = FAISS.from_documents(splits, embeddings)
 vectorstore.save_local("./faiss_index")
 
-# 加载（需要 allow_dangerous_deserialization）
+# Load (requires allow_dangerous_deserialization)
 loaded = FAISS.load_local(
     "./faiss_index",
     embeddings,
@@ -208,21 +208,21 @@ loaded = FAISS.load_local(
 
 ---
 
-## 检索策略
+## Retrieval Strategies
 
-### 相似度搜索
+### Similarity Search
 
 ```python
-# 基础搜索
+# Basic search
 results = vectorstore.similarity_search(query, k=5)
 
-# 带分数
+# With scores
 results_with_score = vectorstore.similarity_search_with_score(query, k=5)
 for doc, score in results_with_score:
     print(f"Score: {score}, Content: {doc.page_content}")
 ```
 
-### MMR 搜索（平衡相关性和多样性）
+### MMR Search (Balance Relevance and Diversity)
 
 ```python
 retriever = vectorstore.as_retriever(
@@ -231,7 +231,7 @@ retriever = vectorstore.as_retriever(
 )
 ```
 
-### 元数据过滤
+### Metadata Filtering
 
 ```python
 docs = [
@@ -241,19 +241,19 @@ docs = [
     ),
 ]
 
-# 按元数据过滤搜索
+# Filter search by metadata
 results = vectorstore.similarity_search(
     "programming",
     k=5,
-    filter={"language": "python"}  # 只返回 Python 文档
+    filter={"language": "python"}  # Only return Python documents
 )
 ```
 
 ---
 
-## RAG + Agent 集成
+## RAG + Agent Integration
 
-将 RAG 作为 Agent 的工具：
+Use RAG as a tool for the agent:
 
 ```python
 from langchain.agents import create_agent
@@ -277,65 +277,65 @@ result = agent.invoke({
 
 ---
 
-## 常见错误与修复
+## Common Mistakes and Fixes
 
-### ❌ Chunk Size 过小或过大
+### ❌ Chunk Size Too Small or Too Large
 ```python
-# 错误：太小（丢失上下文）或太大（超出限制）
+# Wrong: too small (loses context) or too large (exceeds limits)
 splitter = RecursiveCharacterTextSplitter(chunk_size=50)
 splitter = RecursiveCharacterTextSplitter(chunk_size=10000)
 
-# 正确：500-1500 通常适合
+# Correct: 500-1500 is usually appropriate
 splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
 ```
 
-### ❌ 没有 Chunk Overlap
+### ❌ No Chunk Overlap
 ```python
-# 错误：没有重叠 - 边界处上下文中断
+# Wrong: no overlap — context breaks at boundaries
 splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
 
-# 正确：10-20% 重叠
+# Correct: 10-20% overlap
 splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
 ```
 
-### ❌ 使用 InMemory 向量存储用于生产
+### ❌ Using InMemory Vector Store for Production
 ```python
-# 错误：重启后丢失
+# Wrong: lost on restart
 vectorstore = InMemoryVectorStore.from_documents(docs, embeddings)
 
-# 正确
+# Correct
 vectorstore = Chroma.from_documents(docs, embeddings, persist_directory="./chroma_db")
 ```
 
-### ❌ 索引和查询使用不同的嵌入模型
+### ❌ Different Embedding Models for Indexing and Querying
 ```python
-# 错误：不兼容！
+# Wrong: incompatible!
 vectorstore = Chroma.from_documents(docs, OpenAIEmbeddings(model="text-embedding-3-small"))
 retriever = vectorstore.as_retriever(embeddings=OpenAIEmbeddings(model="text-embedding-3-large"))
 
-# 正确：同一模型
+# Correct: same model
 embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
 vectorstore = Chroma.from_documents(docs, embeddings)
-retriever = vectorstore.as_retriever()  # 使用相同嵌入
+retriever = vectorstore.as_retriever()  # Uses same embeddings
 ```
 
-### ❌ 加载 FAISS 时忘记反序列化参数
+### ❌ Forgetting Deserialization Parameter When Loading FAISS
 ```python
-# 错误：将引发错误
+# Wrong: will raise error
 loaded_store = FAISS.load_local("./faiss_index", embeddings)
 
-# 正确
+# Correct
 loaded_store = FAISS.load_local("./faiss_index", embeddings, allow_dangerous_deserialization=True)
 ```
 
-### ❌ 嵌入维度不匹配
+### ❌ Embedding Dimension Mismatch
 ```python
-# 错误：索引有 1536 维，但使用 512 维嵌入
+# Wrong: index has 1536 dims, but using 512-dim embeddings
 pc.create_index(name="idx", dimension=1536, metric="cosine")
 vectorstore = PineconeVectorStore.from_documents(
     docs, OpenAIEmbeddings(model="text-embedding-3-small", dimensions=512), index=pc.Index("idx")
-)  # 错误：维度不匹配！
+)  # Error: dimension mismatch!
 
-# 正确：匹配维度
-embeddings = OpenAIEmbeddings()  # 默认 1536
+# Correct: match dimensions
+embeddings = OpenAIEmbeddings()  # Default 1536
 ```

@@ -1,34 +1,34 @@
 # langchain-fundamentals
 
-> 编写任何 LangChain Agent 代码时参阅此文件。涵盖 `create_agent()`、工具定义（`@tool` / `tool()`）、带 Checkpointer 的持久化、中间件模式，以及结构化输出。
+> Consult this file when writing any LangChain agent code. Covers `create_agent()`, tool definitions (`@tool` / `tool()`), persistence with Checkpointer, middleware patterns, and structured output.
 
-## 目录
-- [使用 create_agent 创建 Agent](#使用-create_agent-创建-agent)
-- [定义工具](#定义工具)
-- [中间件控制 Agent 行为](#中间件控制-agent-行为)
-- [结构化输出](#结构化输出)
-- [模型配置](#模型配置)
-- [常见错误与修复](#常见错误与修复)
+## Table of Contents
+- [Creating Agents with create_agent](#creating-agents-with-create_agent)
+- [Defining Tools](#defining-tools)
+- [Middleware for Controlling Agent Behavior](#middleware-for-controlling-agent-behavior)
+- [Structured Output](#structured-output)
+- [Model Configuration](#model-configuration)
+- [Common Mistakes and Fixes](#common-mistakes-and-fixes)
 
 ---
 
-## 使用 create_agent 创建 Agent
+## Creating Agents with create_agent
 
-`create_agent()` 是构建 Agent 的推荐方式。它处理 Agent 循环、工具执行和状态管理。
+`create_agent()` is the recommended way to build agents. It handles the agent loop, tool execution, and state management.
 
-**所有其他替代方案都是过时的。**
+**All other alternatives are outdated.**
 
-| 参数 | 用途 | 示例 |
+| Parameter | Purpose | Example |
 |------|------|------|
-| `model` | 使用的 LLM | `"anthropic:claude-sonnet-4-5"` 或模型实例 |
-| `tools` | 工具列表 | `[search, calculator]` |
-| `system_prompt` / `systemPrompt` | Agent 指令 | `"You are a helpful assistant"` |
-| `checkpointer` | 状态持久化 | `MemorySaver()` |
-| `middleware` | 处理 hooks | `[HumanInTheLoopMiddleware(...)]` |
+| `model` | LLM to use | `"anthropic:claude-sonnet-4-5"` or model instance |
+| `tools` | List of tools | `[search, calculator]` |
+| `system_prompt` / `systemPrompt` | Agent instructions | `"You are a helpful assistant"` |
+| `checkpointer` | State persistence | `MemorySaver()` |
+| `middleware` | Processing hooks | `[HumanInTheLoopMiddleware(...)]` |
 
-### 基础 Agent
+### Basic Agent
 
-**Python：**
+**Python:**
 ```python
 from langchain.agents import create_agent
 from langchain_core.tools import tool
@@ -54,7 +54,7 @@ result = agent.invoke({
 print(result["messages"][-1].content)
 ```
 
-**TypeScript：**
+**TypeScript:**
 ```typescript
 import { createAgent } from "langchain";
 import { tool } from "@langchain/core/tools";
@@ -81,7 +81,7 @@ const result = await agent.invoke({
 console.log(result.messages[result.messages.length - 1].content);
 ```
 
-### 带持久化的 Agent
+### Agent with Persistence
 
 ```python
 from langchain.agents import create_agent
@@ -97,16 +97,16 @@ agent = create_agent(
 config = {"configurable": {"thread_id": "user-123"}}
 agent.invoke({"messages": [{"role": "user", "content": "My name is Alice"}]}, config=config)
 result = agent.invoke({"messages": [{"role": "user", "content": "What's my name?"}]}, config=config)
-# Agent 记得："Your name is Alice"
+# Agent remembers: "Your name is Alice"
 ```
 
 ---
 
-## 定义工具
+## Defining Tools
 
-工具是 Agent 可以调用的函数。使用 `@tool` 装饰器（Python）或 `tool()` 函数（TypeScript）。
+Tools are functions that agents can call. Use the `@tool` decorator (Python) or `tool()` function (TypeScript).
 
-**Python：**
+**Python:**
 ```python
 from langchain_core.tools import tool
 
@@ -121,7 +121,7 @@ def add(a: float, b: float) -> float:
     return a + b
 ```
 
-**TypeScript：**
+**TypeScript:**
 ```typescript
 import { tool } from "@langchain/core/tools";
 import { z } from "zod";
@@ -141,11 +141,11 @@ const add = tool(
 
 ---
 
-## 中间件控制 Agent 行为
+## Middleware for Controlling Agent Behavior
 
-中间件拦截 Agent 循环，添加人工审批、错误处理、日志记录等。
+Middleware intercepts the agent loop to add human approval, error handling, logging, etc.
 
-关键导入：
+Key imports:
 ```python
 from langchain.agents.middleware import HumanInTheLoopMiddleware, wrap_tool_call
 ```
@@ -153,20 +153,20 @@ from langchain.agents.middleware import HumanInTheLoopMiddleware, wrap_tool_call
 import { humanInTheLoopMiddleware, createMiddleware } from "langchain";
 ```
 
-关键模式：
-- **HITL**：`middleware=[HumanInTheLoopMiddleware(interrupt_on={"dangerous_tool": True})]` — 需要 `checkpointer` + `thread_id`
-- **中断后恢复**：`agent.invoke(Command(resume={"decisions": [{"type": "approve"}]}), config=config)`
-- **自定义中间件**：`@wrap_tool_call` 装饰器（Python）或 `createMiddleware({ wrapToolCall: ... })`（TypeScript）
+Key patterns:
+- **HITL**: `middleware=[HumanInTheLoopMiddleware(interrupt_on={"dangerous_tool": True})]` — requires `checkpointer` + `thread_id`
+- **Resume after interrupt**: `agent.invoke(Command(resume={"decisions": [{"type": "approve"}]}), config=config)`
+- **Custom middleware**: `@wrap_tool_call` decorator (Python) or `createMiddleware({ wrapToolCall: ... })` (TypeScript)
 
-> 详细的中间件示例请参见 `langchain-middleware.md`
+> For detailed middleware examples, see `langchain-middleware.md`
 
 ---
 
-## 结构化输出
+## Structured Output
 
-使用 `response_format` 或 `with_structured_output()` 获取类型化、验证过的 Agent 响应。
+Use `response_format` or `with_structured_output()` to get typed, validated agent responses.
 
-**Python：**
+**Python:**
 ```python
 from langchain.agents import create_agent
 from pydantic import BaseModel, Field
@@ -176,19 +176,19 @@ class ContactInfo(BaseModel):
     email: str
     phone: str = Field(description="Phone number with area code")
 
-# 选项 1：带结构化输出的 Agent
+# Option 1: Agent with structured output
 agent = create_agent(model="gpt-4.1", tools=[search], response_format=ContactInfo)
 result = agent.invoke({"messages": [{"role": "user", "content": "Find contact for John"}]})
 print(result["structured_response"])  # ContactInfo(name='John', ...)
 
-# 选项 2：模型级结构化输出（无需 Agent）
+# Option 2: Model-level structured output (no agent needed)
 from langchain_openai import ChatOpenAI
 model = ChatOpenAI(model="gpt-4.1")
 structured_model = model.with_structured_output(ContactInfo)
 response = structured_model.invoke("Extract: John, john@example.com, 555-1234")
 ```
 
-**TypeScript：**
+**TypeScript:**
 ```typescript
 import { ChatOpenAI } from "@langchain/openai";
 import { z } from "zod";
@@ -206,9 +206,9 @@ const response = await structuredModel.invoke("Extract: John, john@example.com, 
 
 ---
 
-## 模型配置
+## Model Configuration
 
-`create_agent` 接受模型字符串或模型实例（用于自定义设置）：
+`create_agent` accepts a model string or a model instance (for custom settings):
 
 ```python
 from langchain_anthropic import ChatAnthropic
@@ -217,17 +217,17 @@ agent = create_agent(model=ChatAnthropic(model="claude-sonnet-4-5", temperature=
 
 ---
 
-## 常见错误与修复
+## Common Mistakes and Fixes
 
-### ❌ 工具描述缺失或模糊
+### ❌ Missing or Vague Tool Description
 ```python
-# 错误：模糊描述
+# Wrong: vague description
 @tool
 def bad_tool(input: str) -> str:
     """Does stuff."""
     return "result"
 
-# 正确：清晰、具体的描述，带 Args
+# Correct: clear, specific description with Args
 @tool
 def search(query: str) -> str:
     """Search the web for current information about a topic.
@@ -240,15 +240,15 @@ def search(query: str) -> str:
     return web_search(query)
 ```
 
-### ❌ 没有 Checkpointer（Agent 不记得）
+### ❌ No Checkpointer (Agent Doesn't Remember)
 ```python
-# 错误：无持久化
+# Wrong: no persistence
 agent = create_agent(model="anthropic:claude-sonnet-4-5", tools=[search])
 agent.invoke({"messages": [{"role": "user", "content": "I'm Bob"}]})
 agent.invoke({"messages": [{"role": "user", "content": "What's my name?"}]})
-# Agent 不记得！
+# Agent doesn't remember!
 
-# 正确：添加 Checkpointer 和 thread_id
+# Correct: add Checkpointer and thread_id
 agent = create_agent(
     model="anthropic:claude-sonnet-4-5",
     tools=[search],
@@ -258,24 +258,24 @@ config = {"configurable": {"thread_id": "session-1"}}
 agent.invoke({...}, config=config)
 ```
 
-### ❌ 无限循环（缺少迭代限制）
+### ❌ Infinite Loop (Missing Iteration Limit)
 ```python
-# 错误：可能无限循环
+# Wrong: may loop infinitely
 result = agent.invoke({"messages": [("user", "Do research")]})
 
-# 正确：在 config 中设置 recursion_limit
+# Correct: set recursion_limit in config
 result = agent.invoke(
     {"messages": [("user", "Do research")]},
     config={"recursion_limit": 10},
 )
 ```
 
-### ❌ 错误地访问结果
+### ❌ Incorrectly Accessing Results
 ```python
-# 错误：直接访问 result.content
+# Wrong: accessing result.content directly
 result = agent.invoke({"messages": [{"role": "user", "content": "Hello"}]})
-print(result.content)  # AttributeError！
+print(result.content)  # AttributeError!
 
-# 正确：从 result dict 中访问 messages
-print(result["messages"][-1].content)  # 最后一条消息内容
+# Correct: access messages from result dict
+print(result["messages"][-1].content)  # Last message content
 ```

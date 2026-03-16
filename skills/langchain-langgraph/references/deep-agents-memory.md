@@ -1,37 +1,37 @@
 # deep-agents-memory
 
-> Deep Agent 需要记忆、持久化或文件系统访问时参阅此文件。涵盖 StateBackend（临时）、StoreBackend（持久）、FilesystemMiddleware，以及用于路由的 CompositeBackend。
+> Consult this file when a Deep Agent needs memory, persistence, or filesystem access. Covers StateBackend (ephemeral), StoreBackend (persistent), FilesystemMiddleware, and CompositeBackend for routing.
 
-## Backend 选择
+## Backend Selection
 
-| 使用场景 | Backend | 理由 |
-|---------|---------|------|
-| 临时工作文件 | StateBackend | 默认，无需配置 |
-| 本地开发 CLI | FilesystemBackend | 直接磁盘访问 |
-| 跨会话记忆 | StoreBackend | 跨线程持久 |
-| 混合存储 | CompositeBackend | 混合临时 + 持久 |
+| Use Case | Backend | Reason |
+|---------|---------|--------|
+| Ephemeral working files | StateBackend | Default, no configuration needed |
+| Local development CLI | FilesystemBackend | Direct disk access |
+| Cross-session memory | StoreBackend | Persistent across threads |
+| Mixed storage | CompositeBackend | Combine ephemeral + persistent |
 
-`FilesystemMiddleware` 提供工具：`ls`, `read_file`, `write_file`, `edit_file`, `glob`, `grep`
+`FilesystemMiddleware` provides tools: `ls`, `read_file`, `write_file`, `edit_file`, `glob`, `grep`
 
 ---
 
-## 默认 StateBackend（临时）
+## Default StateBackend (Ephemeral)
 
 ```python
 from deepagents import create_deep_agent
 
-agent = create_deep_agent()  # 默认：StateBackend
+agent = create_deep_agent()  # Default: StateBackend
 result = agent.invoke({
     "messages": [{"role": "user", "content": "Write notes to /draft.txt"}]
 }, config={"configurable": {"thread_id": "thread-1"}})
-# /draft.txt 在线程结束时丢失
+# /draft.txt is lost when the thread ends
 ```
 
 ---
 
-## CompositeBackend（混合存储）
+## CompositeBackend (Mixed Storage)
 
-按路径前缀将文件路由到不同 Backend：
+Routes files to different backends by path prefix:
 
 ```python
 from deepagents import create_deep_agent
@@ -47,45 +47,45 @@ composite_backend = lambda rt: CompositeBackend(
 
 agent = create_deep_agent(backend=composite_backend, store=store)
 
-# /draft.txt -> 临时 (StateBackend)
-# /memories/user-prefs.txt -> 持久 (StoreBackend)
+# /draft.txt -> ephemeral (StateBackend)
+# /memories/user-prefs.txt -> persistent (StoreBackend)
 ```
 
 ---
 
-## 跨会话记忆
+## Cross-Session Memory
 
 ```python
-# /memories/ 中的文件通过 StoreBackend 跨线程持久
+# Files in /memories/ persist across threads via StoreBackend
 config1 = {"configurable": {"thread_id": "thread-1"}}
 agent.invoke({"messages": [{"role": "user", "content": "Save to /memories/style.txt"}]}, config=config1)
 
 config2 = {"configurable": {"thread_id": "thread-2"}}
 agent.invoke({"messages": [{"role": "user", "content": "Read /memories/style.txt"}]}, config=config2)
-# 线程 2 可以读取线程 1 保存的文件
+# Thread 2 can read the file saved by thread 1
 ```
 
 ---
 
-## FilesystemBackend（本地开发）
+## FilesystemBackend (Local Development)
 
 ```python
 from deepagents.backends import FilesystemBackend
 from langgraph.checkpoint.memory import MemorySaver
 
 agent = create_deep_agent(
-    backend=FilesystemBackend(root_dir=".", virtual_mode=True),  # 限制访问
+    backend=FilesystemBackend(root_dir=".", virtual_mode=True),  # Restrict access
     interrupt_on={"write_file": True, "edit_file": True},
     checkpointer=MemorySaver()
 )
-# Agent 可以读写磁盘上的实际文件
+# Agent can read and write actual files on disk
 ```
 
-**⚠️ 安全警告：永远不要在 Web 服务器中使用 FilesystemBackend — 改用 StateBackend 或沙箱。**
+**⚠️ Security Warning: Never use FilesystemBackend in a web server — use StateBackend or a sandbox instead.**
 
 ---
 
-## 在自定义工具中使用 Store
+## Using Store in Custom Tools
 
 ```python
 from langchain.tools import tool, ToolRuntime
@@ -112,48 +112,48 @@ agent = create_agent(model="gpt-4.1", tools=[get_user_preference, save_user_pref
 
 ---
 
-## 常见错误与修复
+## Common Mistakes and Fixes
 
-### ❌ StoreBackend 缺少 store 实例
+### ❌ StoreBackend Without Store Instance
 ```python
-# 错误
+# Wrong
 agent = create_deep_agent(backend=lambda rt: StoreBackend(rt))
 
-# 正确
+# Correct
 agent = create_deep_agent(backend=lambda rt: StoreBackend(rt), store=InMemoryStore())
 ```
 
-### ❌ StateBackend 文件不跨线程持久
+### ❌ StateBackend Files Don't Persist Across Threads
 ```python
-# 错误：thread-2 无法读取 thread-1 的文件
-agent.invoke({...}, config={"configurable": {"thread_id": "thread-1"}})  # 写入
-agent.invoke({...}, config={"configurable": {"thread_id": "thread-2"}})  # 找不到文件！
+# Wrong: thread-2 cannot read files from thread-1
+agent.invoke({...}, config={"configurable": {"thread_id": "thread-1"}})  # write
+agent.invoke({...}, config={"configurable": {"thread_id": "thread-2"}})  # file not found!
 
-# 正确：使用 CompositeBackend 与 StoreBackend 路由
+# Correct: use CompositeBackend with StoreBackend routing
 ```
 
-### ❌ 路径前缀不匹配
+### ❌ Path Prefix Mismatch
 ```python
-# routes={"/memories/": StoreBackend(rt)} 的情况下：
-agent.invoke(...)  # /prefs.txt -> 临时（不匹配）
-agent.invoke(...)  # /memories/prefs.txt -> 持久（匹配路由）
+# With routes={"/memories/": StoreBackend(rt)}:
+agent.invoke(...)  # /prefs.txt -> ephemeral (no match)
+agent.invoke(...)  # /memories/prefs.txt -> persistent (matches route)
 ```
 
-### ❌ 生产环境使用 InMemoryStore
+### ❌ Using InMemoryStore in Production
 ```python
-# 错误：重启后数据丢失
+# Wrong: data lost on restart
 store = InMemoryStore()
 
-# 正确：生产使用 PostgresStore
+# Correct: use PostgresStore for production
 store = PostgresStore(connection_string="postgresql://...")
 ```
 
-### ❌ FilesystemBackend 缺少 virtual_mode
+### ❌ FilesystemBackend Without virtual_mode
 ```python
-# 正确：启用 virtual_mode=True 防止 ../ 和 ~/ 路径逃逸
+# Correct: enable virtual_mode=True to prevent ../ and ~/ path escapes
 backend = FilesystemBackend(root_dir="/project", virtual_mode=True)
 ```
 
-> **CompositeBackend 最长前缀优先匹配：**
+> **CompositeBackend uses longest-prefix-first matching:**
 > `routes={"/mem/": StoreBackend(rt), "/mem/temp/": StateBackend(rt)}`
-> - `/mem/file.txt` → StoreBackend；`/mem/temp/file.txt` → StateBackend（更长的前缀匹配）
+> - `/mem/file.txt` → StoreBackend; `/mem/temp/file.txt` → StateBackend (longer prefix matches)

@@ -1,121 +1,121 @@
 # framework-selection
 
-> 在任何 LangChain/LangGraph/Deep Agents 项目**开始前**调用此参考。用于决策使用哪个框架层：LangChain、LangGraph、Deep Agents 或组合。**必须在使用其他技能前先查阅本文件。**
+> Consult this reference **before** starting any LangChain/LangGraph/Deep Agents project. Use it to decide which framework layer to use: LangChain, LangGraph, Deep Agents, or a combination. **Must be consulted before using other skills.**
 
-LangChain、LangGraph 和 Deep Agents 是**分层**关系，而非竞争关系。每一层都建立在下一层之上：
+LangChain, LangGraph, and Deep Agents are **layered** — not competing. Each layer builds on the one below:
 
 ```
 ┌─────────────────────────────────────────┐
-│              Deep Agents                │  ← 最高层：开箱即用
+│              Deep Agents                │  ← Highest layer: out-of-the-box
 │   (planning, memory, skills, files)     │
 ├─────────────────────────────────────────┤
-│               LangGraph                 │  ← 编排层：图、循环、状态
+│               LangGraph                 │  ← Orchestration layer: graphs, loops, state
 │    (nodes, edges, state, persistence)   │
 ├─────────────────────────────────────────┤
-│               LangChain                 │  ← 基础层：模型、工具、链
+│               LangChain                 │  ← Foundation layer: models, tools, chains
 │      (models, tools, prompts, RAG)      │
 └─────────────────────────────────────────┘
 ```
 
-选择更高层不会切断对底层的访问——你可以在 Deep Agents 中使用 LangGraph 图，也可以在两者中使用 LangChain 基础组件。
+Choosing a higher layer does not cut off access to lower layers — you can use LangGraph graphs inside Deep Agents, and LangChain base components in both.
 
 ---
 
-## 决策指南
+## Decision Guide
 
-按顺序回答以下问题：
+Answer the following questions in order:
 
-| 问题 | 是 → | 否 → |
+| Question | Yes → | No → |
 |------|------|------|
-| 任务是否需要分解子任务、跨长会话管理文件、持久记忆或按需加载技能？ | **Deep Agents** | ↓ |
-| 任务是否需要复杂的控制流——循环、动态分支、并行工作者、human-in-the-loop 或自定义状态？ | **LangGraph** | ↓ |
-| 这是单一用途的 Agent，接受输入、执行工具并返回结果？ | **LangChain** (`create_agent`) | ↓ |
-| 这是纯粹的模型调用、链或带有 Agent 循环的检索管道？ | **LangChain** (LCEL / chain) | — |
+| Does the task require breaking down sub-tasks, managing files across long sessions, persistent memory, or on-demand skill loading? | **Deep Agents** | ↓ |
+| Does the task require complex control flow — loops, dynamic branching, parallel workers, human-in-the-loop, or custom state? | **LangGraph** | ↓ |
+| Is this a single-purpose agent that takes input, executes tools, and returns a result? | **LangChain** (`create_agent`) | ↓ |
+| Is this a pure model call, chain, or retrieval pipeline with an agent loop? | **LangChain** (LCEL / chain) | — |
 
 ---
 
-## 框架概述
+## Framework Overview
 
-### LangChain — 任务聚焦且自包含时使用
+### LangChain — Use When Task-Focused and Self-Contained
 
-**最适合：**
-- 使用固定工具集的单一用途 Agent
-- RAG 管道和文档问答
-- 模型调用、提示模板、输出解析
-- 快速原型，Agent 逻辑简单
+**Best for:**
+- Single-purpose agents with a fixed toolset
+- RAG pipelines and document Q&A
+- Model calls, prompt templates, output parsing
+- Quick prototypes with simple agent logic
 
-**不适合：**
-- Agent 需要跨多步骤规划
-- 状态需要跨多个会话持久化
-- 控制流是条件性或迭代性的
+**Not suitable for:**
+- Agents that need multi-step planning
+- State that needs to persist across multiple sessions
+- Control flow that is conditional or iterative
 
-**接下来调用的参考：** `langchain-fundamentals`, `langchain-rag`, `langchain-middleware`
-
----
-
-### LangGraph — 需要控制流所有权时使用
-
-**最适合：**
-- 带有分支逻辑或循环的 Agent（例如重试直到正确、反思）
-- 多步骤工作流，不同路径取决于中间结果
-- 特定步骤的 Human-in-the-loop 审批
-- 并行扇出 / 扇入（Map-Reduce 模式）
-- 会话内跨调用的持久状态
-
-**不适合：**
-- 希望规划、文件管理和子 Agent 委托自动处理（使用 Deep Agents）
-- 工作流本身已足够简单
-
-**接下来调用的参考：** `langgraph-fundamentals`, `langgraph-human-in-the-loop`, `langgraph-persistence`
+**Next references to consult:** `langchain-fundamentals`, `langchain-rag`, `langchain-middleware`
 
 ---
 
-### Deep Agents — 任务开放且多维时使用
+### LangGraph — Use When You Need Control Flow Ownership
 
-**最适合：**
-- 需要将工作分解为 Todo 列表的长时间运行任务
-- 需要读、写和管理跨会话文件的 Agent
-- 将子任务委托给专门的子 Agent
-- 按需加载领域特定技能
-- 跨多个会话存活的持久记忆
+**Best for:**
+- Agents with branching logic or loops (e.g., retry until correct, reflection)
+- Multi-step workflows where different paths depend on intermediate results
+- Human-in-the-loop approval at specific steps
+- Parallel fan-out / fan-in (Map-Reduce patterns)
+- Persistent state across calls within a session
 
-**内置中间件：**
+**Not suitable for:**
+- When you want planning, file management, and sub-agent delegation handled automatically (use Deep Agents)
+- When the workflow is simple enough on its own
 
-| 中间件 | 提供的能力 | 是否常开？ |
-|--------|-----------|-----------|
-| `TodoListMiddleware` | `write_todos` 工具 | ✓ |
+**Next references to consult:** `langgraph-fundamentals`, `langgraph-human-in-the-loop`, `langgraph-persistence`
+
+---
+
+### Deep Agents — Use When Tasks Are Open-Ended and Multi-Dimensional
+
+**Best for:**
+- Long-running tasks that need to be broken down into a todo list
+- Agents that need to read, write, and manage files across sessions
+- Delegating sub-tasks to specialized sub-agents
+- On-demand loading of domain-specific skills
+- Persistent memory that survives across multiple sessions
+
+**Built-in middleware:**
+
+| Middleware | Capability Provided | Always On? |
+|--------|-----------|-----------| 
+| `TodoListMiddleware` | `write_todos` tool | ✓ |
 | `FilesystemMiddleware` | `ls`, `read_file`, `write_file`, `edit_file`, `glob`, `grep` | ✓ |
-| `SubAgentMiddleware` | `task` 工具 | ✓ |
-| `SkillsMiddleware` | 从 skills 目录按需加载 SKILL.md | 可选 |
-| `MemoryMiddleware` | 通过 Store 实现跨会话长期记忆 | 可选 |
-| `HumanInTheLoopMiddleware` | 在敏感工具调用前暂停并请求审批 | 可选 |
+| `SubAgentMiddleware` | `task` tool | ✓ |
+| `SkillsMiddleware` | On-demand SKILL.md loading from skills directory | Optional |
+| `MemoryMiddleware` | Cross-session long-term memory via Store | Optional |
+| `HumanInTheLoopMiddleware` | Pause and request approval before sensitive tool calls | Optional |
 
-**接下来调用的参考：** `deep-agents-core`, `deep-agents-memory`, `deep-agents-orchestration`
-
----
-
-## 混合使用
-
-因为框架是分层的，可以在同一项目中组合使用。最常见的模式是以 Deep Agents 作为顶层编排器，针对专门子 Agent 使用 LangGraph。
-
-| 场景 | 推荐模式 |
-|------|---------|
-| 主 Agent 需要规划和记忆，但某个子任务需要精确图控制 | Deep Agents 编排器 → LangGraph 子 Agent |
-| 专门管道（如 RAG、反思循环）由更广泛的 Agent 调用 | LangGraph 图包装为工具或子 Agent |
-| 高级协调 + 特定领域的底层图 | Deep Agents + LangGraph 编译图作为子 Agent |
+**Next references to consult:** `deep-agents-core`, `deep-agents-memory`, `deep-agents-orchestration`
 
 ---
 
-## 快速参考对比
+## Mixing Frameworks
+
+Because the frameworks are layered, they can be combined in the same project. The most common pattern is using Deep Agents as the top-level orchestrator with LangGraph for specialized sub-agents.
+
+| Scenario | Recommended Pattern |
+|------|---------| 
+| Main agent needs planning and memory, but a sub-task requires precise graph control | Deep Agents orchestrator → LangGraph sub-agent |
+| Specialized pipelines (e.g., RAG, reflection loops) called by a broader agent | LangGraph graph wrapped as a tool or sub-agent |
+| High-level coordination + domain-specific low-level graphs | Deep Agents + LangGraph compiled graphs as sub-agents |
+
+---
+
+## Quick Reference Comparison
 
 | | LangChain | LangGraph | Deep Agents |
 |---|-----------|-----------|-------------|
-| **控制流** | 固定（工具循环） | 自定义（图） | 托管（中间件） |
-| **规划** | ✗ | 手动 | ✓ TodoListMiddleware |
-| **文件管理** | ✗ | 手动 | ✓ FilesystemMiddleware |
-| **持久记忆** | ✗ | 需要 Checkpointer | ✓ MemoryMiddleware |
-| **子 Agent 委托** | ✗ | 手动 | ✓ SubAgentMiddleware |
-| **Human-in-the-loop** | ✗ | 手动 interrupt | ✓ HumanInTheLoopMiddleware |
-| **自定义图边** | ✗ | ✓ 完全控制 | 有限 |
-| **设置复杂度** | 低 | 中 | 低 |
-| **灵活性** | 中 | 高 | 中 |
+| **Control Flow** | Fixed (tool loop) | Custom (graph) | Managed (middleware) |
+| **Planning** | ✗ | Manual | ✓ TodoListMiddleware |
+| **File Management** | ✗ | Manual | ✓ FilesystemMiddleware |
+| **Persistent Memory** | ✗ | Requires Checkpointer | ✓ MemoryMiddleware |
+| **Sub-Agent Delegation** | ✗ | Manual | ✓ SubAgentMiddleware |
+| **Human-in-the-loop** | ✗ | Manual interrupt | ✓ HumanInTheLoopMiddleware |
+| **Custom Graph Edges** | ✗ | ✓ Full control | Limited |
+| **Setup Complexity** | Low | Medium | Low |
+| **Flexibility** | Medium | High | Medium |

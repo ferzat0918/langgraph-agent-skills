@@ -1,3 +1,6 @@
+# Agent workflows (local only)
+.agents/
+
 # Python
 __pycache__/
 *.py[cod]

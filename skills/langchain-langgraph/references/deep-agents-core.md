@@ -1,63 +1,63 @@
 # deep-agents-core
 
-> 构建**任何** Deep Agents 应用时参阅此文件。涵盖 `create_deep_agent()`、Harness 架构、SKILL.md 格式和配置选项。
+> Consult this file when building **any** Deep Agents application. Covers `create_deep_agent()`, Harness architecture, SKILL.md format, and configuration options.
 
-## 目录
-- [概述](#概述)
-- [何时使用 Deep Agents](#何时使用-deep-agents)
-- [中间件选择](#中间件选择)
-- [基础示例](#基础示例)
-- [完整配置](#完整配置)
-- [内置工具](#内置工具)
-- [SKILL.md 格式](#skillmd-格式)
+## Table of Contents
+- [Overview](#overview)
+- [When to Use Deep Agents](#when-to-use-deep-agents)
+- [Middleware Selection](#middleware-selection)
+- [Basic Example](#basic-example)
+- [Full Configuration](#full-configuration)
+- [Built-in Tools](#built-in-tools)
+- [SKILL.md Format](#skillmd-format)
 - [Skills vs Memory](#skills-vs-memory)
-- [配置边界](#配置边界)
-- [常见错误与修复](#常见错误与修复)
+- [Configuration Boundaries](#configuration-boundaries)
+- [Common Mistakes and Fixes](#common-mistakes-and-fixes)
 
 ---
 
-## 概述
+## Overview
 
-Deep Agents 是建立在 LangChain/LangGraph 之上的固执己见 Agent 框架，内置中间件：
+Deep Agents is an opinionated agent framework built on top of LangChain/LangGraph with built-in middleware:
 
-- **任务规划**：TodoListMiddleware 将复杂任务分解
-- **上下文管理**：带可插拔后端的文件系统工具
-- **任务委托**：SubAgent 中间件，用于生成专业 Agent
-- **长期记忆**：通过 Store 实现跨线程的持久存储
-- **Human-in-the-loop**：敏感操作的审批工作流
-- **Skills**：按需加载专业能力
+- **Task Planning**: TodoListMiddleware breaks down complex tasks
+- **Context Management**: Filesystem tools with pluggable backends
+- **Task Delegation**: SubAgent middleware for spawning specialized agents
+- **Long-term Memory**: Persistent cross-thread storage via Store
+- **Human-in-the-loop**: Approval workflows for sensitive operations
+- **Skills**: On-demand loading of specialized capabilities
 
-Agent Harness 自动提供这些能力——你只需配置，无需实现。
+The Agent Harness provides these capabilities automatically — you just configure, no need to implement.
 
 ---
 
-## 何时使用 Deep Agents
+## When to Use Deep Agents
 
-| 使用 Deep Agents 时 | 使用 LangChain 的 create_agent 时 |
+| Use Deep Agents When | Use LangChain's create_agent When |
 |-------------------|----------------------------------|
-| 多步骤任务需要规划 | 简单的单一用途任务 |
-| 大型上下文需要文件管理 | 上下文适合单个提示 |
-| 需要专业子 Agent | 单个 Agent 已足够 |
-| 跨会话的持久记忆 | 临时的单会话工作 |
+| Multi-step tasks requiring planning | Simple single-purpose tasks |
+| Large contexts requiring file management | Context fits in a single prompt |
+| Need specialized sub-agents | A single agent is sufficient |
+| Persistent memory across sessions | Temporary single-session work |
 
 ---
 
-## 中间件选择
+## Middleware Selection
 
-| 需要…… | 中间件 | 说明 |
+| Need… | Middleware | Notes |
 |--------|--------|------|
-| 跟踪复杂任务 | TodoListMiddleware | 默认启用 |
-| 管理文件上下文 | FilesystemMiddleware | 配置 backend |
-| 委托工作 | SubAgentMiddleware | 添加自定义子 Agent |
-| 添加人工审批 | HumanInTheLoopMiddleware | 需要 Checkpointer |
-| 加载 Skills | SkillsMiddleware | 提供 skills 目录 |
-| 访问记忆 | MemoryMiddleware | 需要 Store 实例 |
+| Track complex tasks | TodoListMiddleware | Enabled by default |
+| Manage file context | FilesystemMiddleware | Configure backend |
+| Delegate work | SubAgentMiddleware | Add custom sub-agents |
+| Add human approval | HumanInTheLoopMiddleware | Requires Checkpointer |
+| Load Skills | SkillsMiddleware | Provide skills directory |
+| Access memory | MemoryMiddleware | Requires Store instance |
 
 ---
 
-## 基础示例
+## Basic Example
 
-**Python：**
+**Python:**
 ```python
 from deepagents import create_deep_agent
 from langchain.tools import tool
@@ -79,7 +79,7 @@ result = agent.invoke({
 }, config=config)
 ```
 
-**TypeScript：**
+**TypeScript:**
 ```typescript
 import { createDeepAgent } from "deepagents";
 import { tool } from "@langchain/core/tools";
@@ -104,11 +104,11 @@ const result = await agent.invoke({
 
 ---
 
-## 完整配置
+## Full Configuration
 
-包括子 Agent、Skills 和持久化的所有选项：
+All options including sub-agents, Skills, and persistence:
 
-**Python：**
+**Python:**
 ```python
 from deepagents import create_deep_agent
 from deepagents.backends import FilesystemBackend
@@ -129,7 +129,7 @@ agent = create_deep_agent(
 )
 ```
 
-**TypeScript：**
+**TypeScript:**
 ```typescript
 import { createDeepAgent, FilesystemBackend } from "deepagents";
 import { MemorySaver, InMemoryStore } from "@langchain/langgraph";
@@ -150,46 +150,46 @@ const agent = await createDeepAgent({
 
 ---
 
-## 内置工具
+## Built-in Tools
 
-每个 Deep Agent 都可以访问：
+Every Deep Agent has access to:
 
-1. **规划**：`write_todos` — 跟踪多步骤任务
-2. **文件系统**：`ls`, `read_file`, `write_file`, `edit_file`, `glob`, `grep`
-3. **委托**：`task` — 生成专业子 Agent
+1. **Planning**: `write_todos` — track multi-step tasks
+2. **Filesystem**: `ls`, `read_file`, `write_file`, `edit_file`, `glob`, `grep`
+3. **Delegation**: `task` — spawn specialized sub-agents
 
 ---
 
-## SKILL.md 格式
+## SKILL.md Format
 
-Skills 使用**渐进式披露** — Agent 仅在相关时加载内容。
+Skills use **progressive disclosure** — the agent only loads content when relevant.
 
-### 目录结构
+### Directory Structure
 ```
 skills/
 └── my-skill/
-    ├── SKILL.md        # 必需：主 skill 文件
-    ├── examples.py     # 可选：支持文件
-    └── templates/      # 可选：模板
+    ├── SKILL.md        # Required: main skill file
+    ├── examples.py     # Optional: supporting files
+    └── templates/      # Optional: templates
 ```
 
-### SKILL.md 格式
+### SKILL.md Format
 ```markdown
 ---
 name: my-skill
-description: 清晰、具体地描述这个 skill 的功能
+description: Clear, specific description of what this skill does
 ---
 
-# Skill 名称
+# Skill Name
 
-## 概述
-简要解释 skill 的目的。
+## Overview
+Brief explanation of the skill's purpose.
 
-## 何时使用
-此 skill 适用的条件。
+## When to Use
+Conditions under which this skill applies.
 
-## 说明
-给 Agent 的分步指导。
+## Instructions
+Step-by-step guidance for the agent.
 ```
 
 ---
@@ -198,69 +198,69 @@ description: 清晰、具体地描述这个 skill 的功能
 
 | Skills | Memory (AGENTS.md) |
 |--------|-------------------|
-| 按需加载 | 启动时始终加载 |
-| 特定任务的说明 | 通用偏好 |
-| 大型文档 | 紧凑的上下文 |
-| 目录中的 SKILL.md | 单一 AGENTS.md 文件 |
+| Loaded on demand | Always loaded at startup |
+| Task-specific instructions | General preferences |
+| Large documents | Compact context |
+| SKILL.md in directories | Single AGENTS.md file |
 
 ---
 
-## 配置边界
+## Configuration Boundaries
 
-**可以配置：**
-- 模型选择和参数
-- 额外的自定义工具
-- 系统提示自定义
-- 后端存储策略
-- 哪些工具需要审批
-- 带专业工具的自定义子 Agent
+**Can configure:**
+- Model selection and parameters
+- Additional custom tools
+- System prompt customization
+- Backend storage strategy
+- Which tools require approval
+- Custom sub-agents with specialized tools
 
-**不能配置：**
-- 核心中间件移除（TodoList, Filesystem, SubAgent 始终存在）
-- write_todos, task 或文件系统工具名称
-- SKILL.md frontmatter 格式
+**Cannot configure:**
+- Core middleware removal (TodoList, Filesystem, SubAgent are always present)
+- write_todos, task, or filesystem tool names
+- SKILL.md frontmatter format
 
 ---
 
-## 常见错误与修复
+## Common Mistakes and Fixes
 
-### ❌ Interrupts 缺少 Checkpointer
+### ❌ Interrupts Without Checkpointer
 ```python
-# 错误
+# Wrong
 agent = create_deep_agent(interrupt_on={"write_file": True})
 
-# 正确
+# Correct
 agent = create_deep_agent(interrupt_on={"write_file": True}, checkpointer=MemorySaver())
 ```
 
-### ❌ StoreBackend 缺少 Store
+### ❌ StoreBackend Without Store
 ```python
-# 错误
+# Wrong
 agent = create_deep_agent(backend=lambda rt: StoreBackend(rt))
 
-# 正确
+# Correct
 agent = create_deep_agent(backend=lambda rt: StoreBackend(rt), store=InMemoryStore())
 ```
 
-### ❌ 不使用 thread_id 维持对话
+### ❌ Not Using thread_id for Conversations
 ```python
-# 错误：每次调用是独立的
+# Wrong: each call is independent
 agent.invoke({"messages": [{"role": "user", "content": "Hi"}]})
 agent.invoke({"messages": [{"role": "user", "content": "What did I say?"}]})
 
-# 正确
+# Correct
 config = {"configurable": {"thread_id": "user-123"}}
 agent.invoke({"messages": [...]}, config=config)
 agent.invoke({"messages": [...]}, config=config)
 ```
 
-### ❌ SKILL.md 缺少 Frontmatter
+### ❌ SKILL.md Missing Frontmatter
 ```markdown
-<!-- 错误：缺少 frontmatter -->
+<!-- Wrong: missing frontmatter -->
 # My Skill
 This is my skill...
 
-<!-- 正确：包含 YAML frontmatter -->
+<!-- Correct: includes YAML frontmatter -->
 ---
 name: my-skill
 description: Python testing best practices with pytest fixtures and mocking
@@ -269,42 +269,42 @@ description: Python testing best practices with pytest fixtures and mocking
 This is my skill...
 ```
 
-### ❌ Skills 缺少 Backend
+### ❌ Skills Without Backend
 ```python
-# 错误：没有合适 backend，skills 无法加载
+# Wrong: skills cannot load without a proper backend
 agent = create_deep_agent(skills=["./skills/"])
 
-# 正确：使用 FilesystemBackend 加载本地 skills
+# Correct: use FilesystemBackend to load local skills
 agent = create_deep_agent(
     backend=FilesystemBackend(root_dir=".", virtual_mode=True),
     skills=["./skills/"]
 )
 ```
 
-### ❌ Skill 描述过于模糊
+### ❌ Vague Skill Description
 ```markdown
-<!-- 错误：模糊描述 -->
+<!-- Wrong: vague description -->
 ---
 name: helper
 description: Helpful skill
 ---
 
-<!-- 正确：具体描述 -->
+<!-- Correct: specific description -->
 ---
 name: python-testing
 description: Python testing best practices with pytest fixtures, mocking, and async patterns
 ---
 ```
 
-### ❌ 自定义子 Agent 不继承 Skills
+### ❌ Custom Sub-Agents Don't Inherit Skills
 ```python
-# 错误：自定义子 Agent 不继承主 Agent 的 skills
+# Wrong: custom sub-agents don't inherit the main agent's skills
 agent = create_deep_agent(
     skills=["/main-skills/"],
-    subagents=[{"name": "helper", ...}]  # 无 skills
+    subagents=[{"name": "helper", ...}]  # no skills
 )
 
-# 正确：显式提供 skills（通用子 Agent 会继承）
+# Correct: explicitly provide skills (generic sub-agents inherit automatically)
 agent = create_deep_agent(
     skills=["/main-skills/"],
     subagents=[{"name": "helper", "skills": ["/helper-skills/"], ...}]

@@ -477,24 +477,24 @@ Works well with: `brand-guidelines`, `autonomous-agents`, `langfuse`, `structure
 
 ---
 
-## 详细参考指南
+## Detailed Reference Guide
 
-> **遇到具体问题时，请根据下表找到对应的参考文件获取详细代码示例和完整说明。**
+> **When you encounter a specific problem, use the table below to find the corresponding reference file for detailed code examples and full explanations.**
 
-| 遇到的场景 | 查阅的参考文件 |
+| Scenario | Reference File |
 |-----------|-------------|
-| 项目开始前，需要在 LangChain / LangGraph / Deep Agents 三者之间做选择 | `references/framework-selection.md` |
-| 安装包、版本冲突、依赖管理（Python 或 TypeScript） | `references/langchain-dependencies.md` |
-| 使用 `create_agent()`、定义 `@tool`、添加 Checkpointer | `references/langchain-fundamentals.md` |
-| 需要 Human-in-the-loop 的 `HumanInTheLoopMiddleware`、结构化输出 | `references/langchain-middleware.md` |
-| 构建 RAG 管道、向量存储、文档加载器、文本分割 | `references/langchain-rag.md` |
-| 构建 `StateGraph`、设计节点/边、`Command`、`Send` 并行、流式输出 | `references/langgraph-fundamentals.md` |
-| 实现 `interrupt()`、`Command(resume=...)`、审批工作流、验证循环 | `references/langgraph-human-in-the-loop.md` |
-| Checkpointer、`thread_id`、状态历史、时间旅行、跨线程 Store 记忆 | `references/langgraph-persistence.md` |
-| 使用 Deep Agents (`create_deep_agent()`)、Harness 架构、SKILL.md 格式 | `references/deep-agents-core.md` |
-| Deep Agent 的记忆、文件系统后端（StateBackend / StoreBackend / CompositeBackend） | `references/deep-agents-memory.md` |
-| 子 Agent 委托、TodoList 任务规划、Deep Agent 的 HITL 审批工作流 | `references/deep-agents-orchestration.md` |
+| Before starting a project, need to choose between LangChain / LangGraph / Deep Agents | `references/framework-selection.md` |
+| Package installation, version conflicts, dependency management (Python or TypeScript) | `references/langchain-dependencies.md` |
+| Using `create_agent()`, defining `@tool`, adding Checkpointer | `references/langchain-fundamentals.md` |
+| Need Human-in-the-loop `HumanInTheLoopMiddleware`, structured output | `references/langchain-middleware.md` |
+| Building RAG pipelines, vector stores, document loaders, text splitting | `references/langchain-rag.md` |
+| Building `StateGraph`, designing nodes/edges, `Command`, `Send` parallel, streaming | `references/langgraph-fundamentals.md` |
+| Implementing `interrupt()`, `Command(resume=...)`, approval workflows, validation loops | `references/langgraph-human-in-the-loop.md` |
+| Checkpointer, `thread_id`, state history, time travel, cross-thread Store memory | `references/langgraph-persistence.md` |
+| Using Deep Agents (`create_deep_agent()`), Harness architecture, SKILL.md format | `references/deep-agents-core.md` |
+| Deep Agent memory, filesystem backends (StateBackend / StoreBackend / CompositeBackend) | `references/deep-agents-memory.md` |
+| Sub-agent delegation, TodoList task planning, Deep Agent HITL approval workflows | `references/deep-agents-orchestration.md` |
 
-同时，两个已有的参考文件：
-- **`references/architecture_patterns.md`** — RAG、多 Agent 监督者、HITL 完整架构示例
-- **`references/advanced_features.md`** — LangSmith、流式输出、Anthropic Extended Thinking、Prompt Caching、MCP
+Additionally, two existing reference files:
+- **`references/architecture_patterns.md`** — RAG, Multi-Agent Supervisor, HITL complete architecture examples
+- **`references/advanced_features.md`** — LangSmith, Streaming, Anthropic Extended Thinking, Prompt Caching, MCP
